@@ -4,14 +4,16 @@ queue()
 
 
 function makeCharts(error, transactionsData) {
-    
+
     let ndx = crossfilter(transactionsData)
+    
+    let makeMyDay = d3.time.format("%d/%m/%Y").parse;
+    
+    transactionsData.forEach(function(d) {
+        d.date = makeMyDay(d.date);
+    });
 
-    // let nameDim =ndx.dimension(function(d) {
-    //     return d.name;
-    // });
 
-    // below is another way of writing line 14 and 15
     let nameDim = ndx.dimension(dc.pluck("name"));
     let totalSpendPerPerson = nameDim.group().reduceSum(dc.pluck("spend"));
 
@@ -30,7 +32,10 @@ function makeCharts(error, transactionsData) {
         .x(d3.scale.ordinal())
         .xUnits(dc.units.ordinal)
         .xAxisLabel("Person")
+        .transitionDuration(1500)
+        .elasticY(true)
         .yAxis().ticks(6);
+        
 
     let storeDim = ndx.dimension(dc.pluck("store"));
     let totalSpendPerStore = storeDim.group().reduceSum(dc.pluck("spend"));
@@ -45,6 +50,8 @@ function makeCharts(error, transactionsData) {
         .x(d3.scale.ordinal())
         .xUnits(dc.units.ordinal)
         .xAxisLabel("Store")
+        .transitionDuration(1500)
+        .elasticY(true)
         .yAxis().ticks(6);
 
     let stateDim = ndx.dimension(dc.pluck("state"));
@@ -56,10 +63,33 @@ function makeCharts(error, transactionsData) {
         .width(300)
         .radius(150)
         .dimension(stateDim)
-        .group(totalSpendPerState);
+        .group(totalSpendPerState)
+        .transitionDuration(1500);
 
 
-
+    let dateDim = ndx.dimension(dc.pluck("date"));
+    let totaSpendByDate = dateDim.group().reduceSum(dc.pluck("spend"))
+    
+    let minDate = dateDim.bottom(1)[0].date;
+    let maxDate = dateDim.top(1)[0].date;
+    
+    // console.log(dateDim.bottom(1));
+    
+    let dateChart = dc.lineChart(("#date-chart"))
+    
+    dateChart
+        .width(1000)
+        .height(300)
+        .dimension(dateDim)
+        .group(totaSpendByDate)
+        .x(d3.time.scale().domain([minDate, maxDate]))
+        .xAxisLabel("Month")
+        .transitionDuration(1500)
+        .renderHorizontalGridLines(true)
+        .renderVerticalGridLines(true)
+        .yAxis().ticks(8);
+        
+       
 
     dc.renderAll();
 }
